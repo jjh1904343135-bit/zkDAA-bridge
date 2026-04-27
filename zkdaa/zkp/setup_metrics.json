@@ -1,0 +1,58 @@
+[
+  {
+    "batch_size": 16,
+    "merkle_depth": 4,
+    "constraint_count": 8595,
+    "compile_time_ms": 14,
+    "setup_time_ms": 2485,
+    "setup_min_ms": 1782,
+    "setup_max_ms": 3159,
+    "setup_std_dev_ms": 464,
+    "total_time_ms": 26290,
+    "pk_size_bytes": 1644029,
+    "vk_size_bytes": 396,
+    "timestamp": "2025-11-19T14:15:32+08:00"
+  },
+  {
+    "batch_size": 64,
+    "merkle_depth": 6,
+    "constraint_count": 12561,
+    "compile_time_ms": 760,
+    "setup_time_ms": 2512,
+    "setup_min_ms": 2093,
+    "setup_max_ms": 3142,
+    "setup_std_dev_ms": 344,
+    "total_time_ms": 27307,
+    "pk_size_bytes": 2160581,
+    "vk_size_bytes": 396,
+    "timestamp": "2025-11-19T14:16:00+08:00"
+  },
+  {
+    "batch_size": 128,
+    "merkle_depth": 7,
+    "constraint_count": 14544,
+    "compile_time_ms": 1064,
+    "setup_time_ms": 2800,
+    "setup_min_ms": 2507,
+    "setup_max_ms": 3026,
+    "setup_std_dev_ms": 204,
+    "total_time_ms": 28707,
+    "pk_size_bytes": 2418857,
+    "vk_size_bytes": 396,
+    "timestamp": "2025-11-19T14:16:30+08:00"
+  },
+  {
+    "batch_size": 256,
+    "merkle_depth": 8,
+    "constraint_count": 16527,
+    "compile_time_ms": 1089,
+    "setup_time_ms": 3608,
+    "setup_min_ms": 3047,
+    "setup_max_ms": 4592,
+    "setup_std_dev_ms": 448,
+    "total_time_ms": 39029,
+    "pk_size_bytes": 3201421,
+    "vk_size_bytes": 396,
+    "timestamp": "2025-11-19T14:17:09+08:00"
+  }
+]

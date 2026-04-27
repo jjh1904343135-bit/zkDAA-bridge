@@ -1,0 +1,192 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_unlockVerifier",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_auditUnlockVerifier",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "hashLock",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "chunkIndex",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "chunkHash",
+        "type": "uint256"
+      }
+    ],
+    "name": "AuditUnlocked",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[8]",
+        "name": "proof",
+        "type": "uint256[8]"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "pubInputs",
+        "type": "uint256[3]"
+      }
+    ],
+    "name": "AuditUnlock",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "hashLock",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "dataId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timeout",
+        "type": "uint256"
+      }
+    ],
+    "name": "Lock",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[8]",
+        "name": "proof",
+        "type": "uint256[8]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "pubInputs",
+        "type": "uint256[2]"
+      }
+    ],
+    "name": "Unlock",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "auditUnlockVerifier",
+    "outputs": [
+      {
+        "internalType": "contract IAuditUnlockVerifier",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "hashLock",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isUnlocked",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "records",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "hashLock",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "dataId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timeout",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "locked",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "unlocked",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unlockVerifier",
+    "outputs": [
+      {
+        "internalType": "contract IUnlockVerifier",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
