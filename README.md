@@ -1,4 +1,4 @@
-# ZKDAA / ZK-HTLC Deployment and Running Guide
+# ZKDAA Deployment and Running Guide
 
 This project is a zero-knowledge HTLC prototype for verifiable data migration. It combines data integrity auditing, Merkle commitments, Groth16 proofs, verifier contracts, and on-chain HTLC-style locking/unlocking into one end-to-end workflow.
 
