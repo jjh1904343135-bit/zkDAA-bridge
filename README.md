@@ -1,26 +1,28 @@
-# ZKDAA  部署与运行指南
+# ZKDAA / ZK-HTLC Deployment and Running Guide
 
-本项目是一个基于零知识证明和 HTLC 的数据迁移原型系统，用于验证“数据完整性审计”和“链上解锁”绑定在同一套可验证流程中的可行性。系统中包含用户、DSPA、DSPB、Merkle 数据承诺、Groth16 证明、Verifier 合约和 DataMigration 合约等模块。
+This project is a zero-knowledge HTLC prototype for verifiable data migration. It combines data integrity auditing, Merkle commitments, Groth16 proofs, verifier contracts, and on-chain HTLC-style locking/unlocking into one end-to-end workflow.
 
-## 项目功能
+The full GitHub project includes the `blockchain-contracts/` Hardhat project. This README assumes that directory is present.
 
-系统主要完成以下流程：
+## What This Project Does
 
-1. 用户生成两侧秘密材料，分别交给 DSPA 和 DSPB。
-2. DSPA 侧使用普通解锁电路证明 `H1 = MiMC(Pre_I, Sn_I)`。
-3. DSPB 侧先对迁移数据构建 Merkle 树，得到数据承诺 `CIDF`。
-4. DSPB 侧使用联合审计解锁电路证明 `H2 = MiMC(CIDF, Sn_II)`。
-5. 链上 `DataMigration` 合约调用对应 Verifier 合约验证证明。
-6. 两侧锁定、审计解锁和普通解锁完成后，输出运行指标 JSON。
+The system implements the following flow:
 
-核心电路在：
+1. A user generates secret materials and distributes them to DSPA and DSPB.
+2. DSPA uses the normal unlock circuit to prove `H1 = MiMC(Pre_I, Sn_I)`.
+3. DSPB builds a Merkle tree for the migrated data and obtains the data commitment `CIDF`.
+4. DSPB uses the combined audit-unlock circuit to prove `H2 = MiMC(CIDF, Sn_II)`.
+5. The on-chain `DataMigration` contract verifies the submitted proofs through the corresponding verifier contracts.
+6. After both sides complete lock, audit-unlock, and unlock operations, the program exports runtime metrics as JSON.
+
+Core circuits:
 
 ```text
 circuit/unlock_circuit.go
 circuit/audit_unlock_circuit.go
 ```
 
-核心运行入口在：
+Main runtime files:
 
 ```text
 main.go
@@ -30,96 +32,96 @@ tps.go
 utils.go
 ```
 
-## 目录结构
+## Project Structure
 
 ```text
 zk-htlc/
-  actors/                    用户、DSPA、DSPB、Operator 等角色
-  audit/                     审计流程辅助逻辑
-  circuit/                   gnark 零知识电路
-  cmd/                       独立命令入口
-  config/                    本地链配置示例
-  contracts/                 Go 合约绑定
-  data/                      数据结构
-  keys/                      旧版电路密钥示例
-  merkle/                    Merkle 树实现
-  std/hash/poseidon/         本地替换依赖
-  tools/                     verifier 生成、调试等工具
-  zkp/                       ZKP handler
-  blockchain-contracts/      Hardhat 合约工程
-  Datamigration.sol          DataMigration 合约源码备份
+  actors/                    User, DSPA, DSPB, Operator, and related roles
+  audit/                     Audit workflow helpers
+  circuit/                   gnark zero-knowledge circuits
+  cmd/                       Standalone command entry points
+  config/                    Local chain configuration examples
+  contracts/                 Go contract bindings
+  data/                      Data structures
+  keys/                      Legacy circuit key examples
+  merkle/                    Merkle tree implementation
+  std/hash/poseidon/         Local replacement dependency
+  tools/                     Verifier generation and debugging tools
+  zkp/                       ZKP handlers
+  blockchain-contracts/      Hardhat contract project
+  Datamigration.sol          DataMigration contract source backup
   DataMigration.abi          DataMigration ABI
 ```
 
-## 环境要求
+## Requirements
 
-请提前安装：
+Install the following tools first:
 
-- Go 1.24.5 或更高版本
-- Node.js 18 或更高版本
+- Go 1.24.5 or later
+- Node.js 18 or later
 - npm
-- Git Bash、WSL、Linux 或 macOS 终端
+- Git Bash, WSL, Linux, or macOS terminal
 
-`go.mod` 中要求：
+The project requires:
 
 ```text
 go 1.24.5
 ```
 
-如果本机 Go 版本低于 1.24.5，建议先升级 Go。否则运行时 Go 会尝试自动下载 toolchain，网络代理异常时可能失败。
+If your local Go version is lower than 1.24.5, upgrade Go first. Otherwise Go may try to download the required toolchain automatically, and that can fail if your network proxy is unavailable.
 
-## 安装依赖
+## Install Dependencies
 
-在项目根目录安装 Go 依赖：
+From the project root, install Go dependencies:
 
 ```bash
 go mod download
 ```
 
-如果下载失败，可以切换 Go 代理后重试：
+If dependency download fails, configure a Go proxy and retry:
 
 ```bash
 go env -w GOPROXY=https://proxy.golang.org,direct
 go mod download
 ```
 
-国内网络可使用：
+For mainland China networks, you can also use:
 
 ```bash
 go env -w GOPROXY=https://goproxy.cn,direct
 go mod download
 ```
 
-安装合约工程依赖：
+Install contract project dependencies:
 
 ```bash
 cd blockchain-contracts
 npm install
 ```
 
-回到项目根目录：
+Return to the project root:
 
 ```bash
 cd ..
 ```
 
-## 生成 ZKP Setup 和 Verifier 合约
+## Generate ZKP Setup and Verifier Contracts
 
-端到端测试需要两个证明系统：
+The end-to-end test needs two proof systems:
 
-- `UnlockVerifier`：DSPA 普通解锁证明。
-- `AuditVerifier_d<depth>`：DSPB 联合审计解锁证明。
+- `UnlockVerifier`: normal DSPA unlock proof.
+- `AuditVerifier_d<depth>`: combined DSPB audit-unlock proof.
 
-`depth` 由文件大小和分块大小决定：
+The Merkle depth is determined by file size and chunk size:
 
 ```text
 chunk_count = file_size_bytes / chunk_size_bytes
 depth = ceil(log2(chunk_count))
 ```
 
-常用配置如下，默认分块大小为 `1024` bytes：
+Common configurations with the default chunk size of `1024` bytes:
 
-| 文件大小 | filesize | chunksize | depth |
+| File size | filesize | chunksize | depth |
 |---|---:|---:|---:|
 | 8MB | 8388608 | 1024 | 13 |
 | 16MB | 16777216 | 1024 | 14 |
@@ -127,13 +129,13 @@ depth = ceil(log2(chunk_count))
 | 64MB | 67108864 | 1024 | 16 |
 | 128MB | 134217728 | 1024 | 17 |
 
-例如测试 8MB 文件，先生成 depth=13 的 setup 和 verifier：
+For example, to test an 8MB file, generate setup files and verifier contracts for `depth=13`:
 
 ```bash
 go run tools/gen_verifier.go -depth 13
 ```
 
-该命令会生成：
+This generates:
 
 ```text
 build/unlock.pk
@@ -144,77 +146,79 @@ blockchain-contracts/contracts/UnlockVerifier.sol
 blockchain-contracts/contracts/AuditVerifier_d13.sol
 ```
 
-如果切换到 16MB、32MB、64MB 或 128MB，需要重新用对应 depth 生成 verifier，并重新编译部署合约。
+When switching to another file size, regenerate the verifier with the corresponding depth, then recompile and redeploy the contracts.
 
-## 启动本地区块链
+## Start the Local Blockchain
 
-打开终端 1：
+Open terminal 1:
 
 ```bash
 cd blockchain-contracts
 npx hardhat node
 ```
 
-保持该终端运行，不要关闭。
+Keep this terminal running.
 
-默认本地 RPC 地址为：
+The default local RPC endpoint is:
 
 ```text
 http://127.0.0.1:8545
 ```
 
-项目代码默认使用 Hardhat 第一个测试账户私钥：
+The Go code uses the first default Hardhat account private key for local testing:
 
 ```text
 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-该私钥只允许用于本地测试链。
+Use this private key only on the local Hardhat test chain.
 
-## 编译和部署合约
+## Compile and Deploy Contracts
 
-打开终端 2：
+Open terminal 2:
 
 ```bash
 cd blockchain-contracts
 npx hardhat compile
 ```
 
-部署合约时传入当前测试使用的 Merkle depth。以 8MB、depth=13 为例：
+Deploy contracts with the Merkle depth used by the current test. For an 8MB file, use `depth=13`:
 
 ```bash
 DEPTH=13 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 $env:DEPTH="13"
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-部署脚本会部署 Verifier 合约和 DataMigration 合约。记录输出中的两个 `DataMigration` 地址，后续分别作为：
+The deploy script should deploy the verifier contracts and the `DataMigration` contracts. Record the two deployed `DataMigration` addresses and pass them to the Go program as:
 
 ```text
 -addrA
 -addrB
 ```
 
-如果部署脚本输出的是一行两个地址，例如：
+If the deploy output prints two addresses on one line, for example:
 
 ```text
 DataMigration deployed at: 0xAddressA 0xAddressB
 ```
 
-则第一个填入 `-addrA`，第二个填入 `-addrB`。
+use the first address for `-addrA` and the second address for `-addrB`.
 
-## 运行单次端到端测试
+## Run a Single End-to-End Test
 
-在项目根目录执行。
+Run the command from the project root.
 
-由于根目录可能包含多个独立 `main` 文件，推荐显式列出主程序所需文件：
+Because the root directory may contain multiple standalone files with `func main()`, use an explicit file list for the main workflow:
 
 ```bash
+mkdir -p results
+
 go run main.go utils.go batch.go latency.go tps.go \
   -single \
   -filesize 8388608 \
@@ -224,18 +228,18 @@ go run main.go utils.go batch.go latency.go tps.go \
   -output results/metrics_8MB.json
 ```
 
-参数说明：
+Arguments:
 
-| 参数 | 说明 |
+| Argument | Description |
 |---|---|
-| `-single` | 单次端到端测试模式 |
-| `-filesize` | 文件大小，单位 bytes |
-| `-chunksize` | 分块大小，单位 bytes |
-| `-addrA` | A 侧 DataMigration 合约地址 |
-| `-addrB` | B 侧 DataMigration 合约地址 |
-| `-output` | 指标 JSON 输出路径 |
+| `-single` | Run one end-to-end test |
+| `-filesize` | File size in bytes |
+| `-chunksize` | Chunk size in bytes |
+| `-addrA` | DataMigration contract address for side A |
+| `-addrB` | DataMigration contract address for side B |
+| `-output` | JSON metrics output path |
 
-不同文件大小示例：
+Examples for other file sizes:
 
 ```bash
 # 16MB
@@ -259,17 +263,17 @@ go run main.go utils.go batch.go latency.go tps.go \
   -output results/metrics_128MB.json
 ```
 
-注意：切换文件大小时，要先按对应 depth 重新执行：
+Before changing file size, regenerate setup and verifier contracts for the corresponding depth:
 
 ```bash
 go run tools/gen_verifier.go -depth <depth>
 ```
 
-然后重新编译和部署合约。
+Then compile and deploy contracts again.
 
-## 运行 Latency 测试
+## Run Latency Tests
 
-Latency 模式用于测试不同节点规模下的交易确认和协议延迟。
+Latency mode measures protocol and transaction confirmation latency under different node-scale settings.
 
 ```bash
 go run main.go utils.go batch.go latency.go tps.go \
@@ -279,7 +283,7 @@ go run main.go utils.go batch.go latency.go tps.go \
   -addrB 0xYourDataMigrationB
 ```
 
-常用节点规模：
+Common node-scale values:
 
 ```bash
 -nodes 20
@@ -289,9 +293,9 @@ go run main.go utils.go batch.go latency.go tps.go \
 -nodes 60
 ```
 
-## 运行 TPS 测试
+## Run TPS Tests
 
-TPS 模式用于测试批量 Lock / Unlock 交易吞吐能力。
+TPS mode measures Lock / Unlock transaction throughput.
 
 ```bash
 go run main.go utils.go batch.go latency.go tps.go \
@@ -304,49 +308,49 @@ go run main.go utils.go batch.go latency.go tps.go \
   -addrB 0xYourDataMigrationB
 ```
 
-参数说明：
+Arguments:
 
-| 参数 | 说明 |
+| Argument | Description |
 |---|---|
-| `-nodes` | 模拟节点规模 |
-| `-repeat` | 重复测试次数 |
-| `-lock-ms` | Lock 交易发送间隔 |
-| `-unlock-ms` | Unlock 交易发送间隔 |
+| `-nodes` | Simulated node scale |
+| `-repeat` | Number of repeated runs |
+| `-lock-ms` | Interval between Lock transactions |
+| `-unlock-ms` | Interval between Unlock transactions |
 
-## 常见运行顺序
+## Recommended First Run
 
-推荐第一次部署时按这个顺序执行：
+For a clean local run, follow this order:
 
 ```bash
-# 1. 安装 Go 依赖
+# 1. Install Go dependencies
 go mod download
 
-# 2. 安装合约依赖
+# 2. Install contract dependencies
 cd blockchain-contracts
 npm install
 cd ..
 
-# 3. 生成 8MB 测试所需 verifier
+# 3. Generate verifier contracts for the 8MB test
 go run tools/gen_verifier.go -depth 13
 
-# 4. 终端 1 启动本地链
+# 4. Start the local chain in terminal 1
 cd blockchain-contracts
 npx hardhat node
 ```
 
-另开终端：
+Open another terminal:
 
 ```bash
-# 5. 编译部署合约
+# 5. Compile and deploy contracts
 cd blockchain-contracts
 npx hardhat compile
 DEPTH=13 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-再回到项目根目录：
+Return to the project root:
 
 ```bash
-# 6. 运行端到端测试
+# 6. Run the end-to-end test
 go run main.go utils.go batch.go latency.go tps.go \
   -single \
   -filesize 8388608 \
@@ -356,52 +360,52 @@ go run main.go utils.go batch.go latency.go tps.go \
   -output results/metrics_8MB.json
 ```
 
-## 常见问题
+## Common Issues
 
-### 1. `go run .` 报 `main redeclared`
+### 1. `go run .` reports `main redeclared`
 
-根目录里可能有多个实验入口文件，它们都包含 `func main()`。运行主流程时请使用：
+The root directory may contain multiple standalone entry files, and each one has its own `func main()`. Use this command for the main workflow:
 
 ```bash
 go run main.go utils.go batch.go latency.go tps.go ...
 ```
 
-### 2. `go run main.go` 报函数未定义
+### 2. `go run main.go` reports undefined functions
 
-`main.go` 依赖 `utils.go`、`batch.go`、`latency.go`、`tps.go` 中的函数。不要只运行单个 `main.go`。
+`main.go` depends on functions defined in `utils.go`, `batch.go`, `latency.go`, and `tps.go`. Do not run `main.go` alone.
 
-### 3. 找不到 `build/unlock.pk` 或 `build/audit_d<depth>.pk`
+### 3. `build/unlock.pk` or `build/audit_d<depth>.pk` is missing
 
-说明还没有生成 setup。执行：
+Setup files have not been generated yet. Run:
 
 ```bash
 go run tools/gen_verifier.go -depth <depth>
 ```
 
-### 4. 合约部署成功，但 Go 程序交易失败
+### 4. Contracts deploy successfully, but Go transactions fail
 
-检查：
+Check the following:
 
-1. Hardhat 节点是否仍在运行。
-2. `-addrA`、`-addrB` 是否来自当前这次部署。
-3. 测试文件大小对应的 depth 是否和部署的 `AuditVerifier_d<depth>` 一致。
-4. 重新生成 verifier 后，是否重新执行 `npx hardhat compile` 和部署。
+1. The Hardhat node is still running.
+2. `-addrA` and `-addrB` come from the current deployment.
+3. The test file size matches the deployed `AuditVerifier_d<depth>`.
+4. After regenerating verifier contracts, you recompiled and redeployed the contracts.
 
-### 5. Go 自动下载 toolchain 失败
+### 5. Go toolchain download fails
 
-项目需要 Go 1.24.5 或更高版本。建议直接安装对应版本，或者配置可用代理：
+The project requires Go 1.24.5 or later. The simplest fix is to install the required Go version directly. You can also configure a working proxy:
 
 ```bash
 go env -w GOPROXY=https://goproxy.cn,direct
 go mod download
 ```
 
-### 6. 大文件测试很慢
+### 6. Large-file tests are slow
 
-这是正常现象。文件越大，chunk 数越多，Merkle 深度越高，证明生成和数据准备时间都会增加。建议先用 8MB 跑通完整流程，再测试 16MB、32MB、64MB 和 128MB。
+This is expected. Larger files produce more chunks, deeper Merkle paths, and higher data preparation and proof generation costs. Run the 8MB case first, then test 16MB, 32MB, 64MB, and 128MB.
 
-## 安全提醒
+## Security Notes
 
-- README 中出现的私钥是 Hardhat 本地测试账户私钥，只能用于本地链。
-- 不要把本地测试私钥用于公网链或任何真实资产。
-- 每次重启 Hardhat node 后，之前部署的合约地址都会失效，需要重新部署并更新运行命令中的地址。
+- The private key shown in this README is the default Hardhat local test account.
+- Do not use it on public chains or with real assets.
+- After restarting the Hardhat node, previous contract addresses become invalid. Redeploy contracts and update `-addrA` / `-addrB`.
